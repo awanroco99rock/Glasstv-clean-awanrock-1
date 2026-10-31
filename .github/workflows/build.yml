@@ -1,0 +1,100 @@
+name: Build GlassTV 3 Varian Bekasi
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Buat Project GlassTV CLEAN dari NOL
+        run: |
+          mkdir -p app/src/main/java/com/glasstv/bekasi/clean
+          mkdir -p app/src/main/res/layout
+          mkdir -p .github/workflows
+          
+          cat > settings.gradle <<'EOF'
+          include ':app'
+          EOF
+          
+          cat > app/build.gradle <<'EOF'
+          plugins { id 'com.android.application' version '8.2.2' }
+          android {
+            namespace 'com.glasstv.bekasi.clean'
+            compileSdk 34
+            defaultConfig {
+              applicationId "com.glasstv.bekasi.clean"
+              minSdk 23
+              targetSdk 34
+              versionCode 1
+              versionName "1.0-CLEAN-BEKASI"
+            }
+            flavorDimensions "stb"
+            productFlavors {
+              mxqPro { dimension "stb"; resValue "string", "app_name", "" }
+              akari { dimension "stb"; resValue "string", "app_name", "" }
+              b860h { dimension "stb"; resValue "string", "app_name", "" }
+            }
+            buildTypes { release { minifyEnabled false } }
+          }
+          dependencies {
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'androidx.core:core-ktx:1.12.0'
+          }
+          EOF
+          
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <application android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+              <activity android:name=".MainActivity" android:exported="true">
+                <intent-filter>
+                  <action android:name="android.intent.action.MAIN"/>
+                  <category android:name="android.intent.category.HOME"/>
+                  <category android:name="android.intent.category.DEFAULT"/>
+                </intent-filter>
+              </activity>
+            </application>
+          </manifest>
+          EOF
+          
+          cat > app/src/main/res/layout/activity_main.xml <<'EOF'
+          <TextView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:text="GlassTV Bekasi CLEAN - No Title - MotionBGS - Sholat Method 20" android:gravity="center" android:textColor="#FFFFFF" android:background="#000000"/>
+          EOF
+          
+          cat > app/src/main/java/com/glasstv/bekasi/clean/MainActivity.kt <<'EOF'
+          package com.glasstv.bekasi.clean
+          import android.os.Bundle
+          import android.view.KeyEvent
+          import androidx.appcompat.app.AppCompatActivity
+          class MainActivity : AppCompatActivity() {
+            override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContentView(R.layout.activity_main) }
+            override fun onKeyDown(k: Int, e: KeyEvent?): Boolean {
+              if (k == KeyEvent.KEYCODE_DPAD_CENTER || k == KeyEvent.KEYCODE_ENTER || k == KeyEvent.KEYCODE_DPAD_UP || k == KeyEvent.KEYCODE_DPAD_DOWN) return super.onKeyDown(k, e)
+              return super.onKeyDown(k, e)
+            }
+          }
+          EOF
+
+      - name: Build APK
+        run: |
+          gradle wrapper --gradle-version 8.5
+          chmod +x gradlew
+          ./gradlew assembleMxqProRelease assembleAkariRelease assembleB860hRelease
+
+      - name: Siapkan 3 APK
+        run: |
+          mkdir -p Output-APK-Bekasi
+          cp app/build/outputs/apk/mxqPro/release/*.apk Output-APK-Bekasi/GlassTV-CLEAN-MXQ-Pro-OS7-FULL.apk || true
+          cp app/build/outputs/apk/akari/release/*.apk Output-APK-Bekasi/GlassTV-CLEAN-AKARI-AX512-OS10-FULL.apk || true
+          cp app/build/outputs/apk/b860h/release/*.apk Output-APK-Bekasi/GlassTV-CLEAN-B860H-v2.1-OS6-Relubix-LITE.apk || true
+          ls -R Output-APK-Bekasi/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: APK-Bekasi-3-Varian
+          path: Output-APK-Bekasi/
